@@ -1,0 +1,669 @@
+#subset data to remove extra race variable
+ILEData_df <- ILEData %>%
+  select(maternalOPRNID, neonateOPRNID, currentAge_num, race.f,ethnicity.f ,Education.f,
+         income.f,medanxdep.f,dep.f,anx.f, neonaterace, neonateethnicity,
+         drugAmphetamines.f,drugCocaine.f,drugCrystalMeth.F,
+         drugHallucinogens.f,drugMarijuana.f,drugOpiates.F,drugOther.f,
+         streetDrugsTaken.f,AlcConsumeDurPreg.f,SmokeDurPregnancy.f,
+         birthWeight, gestationalWeeks,
+         gestationalDays,cogCCAComposite,cnt)
+labels(ILEData_df)
+
+##COGCCACOMPOSITE
+#check cogccacomposite variable
+ILEData_df %>%
+  select(c(cogCCAComposite)) %>%
+  tbl_summary()%>%
+  add_n
+
+#need to add 18 NULL values to NA
+ILEData_df <- ILEData_df %>%
+  mutate(cogCCAComposite2 = ifelse(cogCCAComposite == 999| cogCCAComposite=="NULL"|cogCCAComposite=="Unknown", NA, cogCCAComposite))
+
+#check cogCCAComposite2
+ILEData_df %>%
+  select(c(cogCCAComposite2)) %>%
+  tbl_summary()%>%
+  add_n
+
+##GESTATIONALWEEKS COVARIATE
+ILEData_df<-ILEData_df
+ILEData_df$gestationalWeeks[ILEData_df$gestationalWeeks== "NULL" ]  <- NA_real_
+
+##MAKE GESTATIONAL AGE NUMERIC
+ILEData_df<- ILEData_df %>%
+  mutate(gestage_num = as.numeric(gestationalWeeks))  #this changes  to a factor
+ILEData_df %>%
+  select(c(gestage_num)) %>%
+  tbl_summary() %>%
+  add_n     
+  
+##check values for gestage
+unique_values<-unique(ILEData_df$gestage_num)
+print(unique_values)
+
+#see distribution
+freq_table<-table(ILEData_df$gestage_num)
+print(freq_table)
+
+##SUBSTANCE USE COVARIATE
+#create new variable to represent ANY substance use while pregnant
+ILEData_df<- ILEData_df %>%
+  mutate(subpreg=case_when (
+    drugCocaine.f== "Yes"|
+      drugCrystalMeth.F=="Yes"|
+      drugMarijuana.f=="Yes"|
+      drugOpiates.F=="Yes"|
+      drugOther.f=="Yes" ~1,
+    TRUE~0))
+
+ILEData_df<- ILEData_df %>%
+  mutate(subpreg.f = factor(subpreg,   
+                            levels = 0:1,   #tell R that the levels are 0 and 1
+                            labels = c("No", "Yes"))) 
+#check subpreg.f
+ILEData_df %>%
+  select(c(subpreg.f)) %>%
+  tbl_summary()%>%
+  add_n
+
+##FIX INCOME VARIABLE
+ILEData_df<-ILEData_df %>%
+  mutate(income_new = case_when(income.f == "Less than $10,000 (less than $833 per month)" ~ 0,
+                                income.f == "$10,000 - $19,999 ($833 - $1,666 per month)" ~ 0,
+                                income.f == "$20,000 - $29,999 ($1,667 - $2,499 per month)" ~ 1,
+                                income.f == "$30,000 - $39,999 ($2,500 - $3,332 per month)" ~ 1,
+                                income.f == "$40,000 - $49,999 ($3,333 - $4,166 per month)" ~ 2,
+                                income.f == "$40,000 - $59,999 ($3,333 - $4,999 per month)"~ 2,
+                                income.f == "$60,000 - $79,999 ($5,000 - $6,666 per month)"~ 3,
+                                income.f== "$80,000 - $89,999 ($6,667 - $7,499 per month)"~ 4,
+                                income.f == "$80,000 - $99,999 ($6,667 - $8,332 per month)"~ 4,
+                                income.f== "$100,000 or over ($8,333 and over per month)"~ 4,
+                                income.f == "Prefer not to say"~ NA_real_,
+                                TRUE ~ NA_real_)) %>% #this makes everything else missing
+  mutate(income2.f = factor(income_new,    #create a variable that is depression, but as a factor
+                            levels = 0:4,   #tell R that the levels are 0 and 1
+                            labels = c("Less than $19,999",  
+                                       "$20,000 - $39,999",
+                                       "$40,000 - $59,999",
+                                       "$60,000 - $79,999",
+                                       "$80,000 or over"
+                            ))) ##give the names for the levels,
+#check new income variable
+ILEData_df %>%
+  select(c(income2.f)) %>%
+  tbl_summary()%>%
+  add_n
+
+
+##CREATE RACETH VARIABLES for maternal and neonate race
+#create new raceth variable
+#first make "other" category large 
+ILEData_df <-ILEData_df %>%
+  mutate(race.f = recode(race.f, "Asian or Pacific Islander"= "Other", "American Indian or Alaska Native (Native American)"= "Other", 
+                         "Native Hawaiian or Other Pacific Islander"= "Other"))
+
+#now combine race and ethnicty levels
+ILEData_df<-ILEData_df %>%
+  mutate(raceth = case_when(
+    race.f == "White" & ethnicity.f == "Non-Hispanic" ~1,
+    race.f == "Black or African American" & ethnicity.f == "Non-Hispanic" ~2,
+    ( race.f == "White" |race.f == "Black or African American"| race.f == "Other") &
+      ethnicity.f == "Hispanic"~3,
+    race.f == "Other" & ethnicity.f == "Non-Hispanic" ~4))
+ILEData_df<- ILEData_df %>%
+  mutate(raceth.f = factor(raceth,   
+                           levels = 1:4,   #tell R that the levels are 0 and 1
+                           labels = c("Non-Hispanic white", "Non-Hispanic black", "Hispanic", "Other, non-Hispanic"))) 
+#recode race because of zero cells
+ILEData_df<-ILEData_df %>%
+  mutate(raceth2.f= recode(raceth.f, "Hispanic"= "Other", "Other, non-Hispanic"= "Other"
+                                      ))
+#create new variable neonateraceth
+#make other category for race larger
+ILEData_df<-ILEData_df %>%
+  mutate(neonaterace= recode(neonaterace, "Asian or Pacific Islander"= "Other", "American Indian or Alaska Native (Native American)"= "Other", 
+                             "Native Hawaiian or Other Pacific Islander"= "Other", "Do Not Wish to Provide"= "Unknown"))
+
+ILEData_df <-ILEData_df %>%
+  mutate(racethneonate = case_when(
+    neonaterace == "White" & neonateethnicity == "Non-Hispanic" ~1,
+    neonaterace == "Black or African American" & neonateethnicity == "Non-Hispanic" ~2,
+    ( neonaterace == "White" |neonaterace == "Black or African American"| neonaterace == "Other") &
+      neonateethnicity == "Hispanic"~3,
+    neonaterace == "Other" & neonateethnicity == "Non-Hispanic" ~4))
+
+ILEData_df <- ILEData_df  %>%
+  mutate(racethneonate.f = factor(racethneonate,   
+                                  levels = 1:4,   #tell R that the levels are 0 and 1
+                                  labels = c("Non-Hispanic white", "Non-Hispanic black", "Hispanic", "Other, non-Hispanic"))) 
+#recode race because of zero cells
+ILEData_df<-ILEData_df %>%
+  mutate(racethneonate2.f= recode(racethneonate.f, "Hispanic"= "Other", "Other, non-Hispanic"= "Other"
+  ))
+#check new variables
+ILEData_df%>%
+  select(c(racethneonate2.f)) %>%
+  tbl_summary()%>%
+  add_n
+
+ILEData_df %>%
+  select(c(raceth2.f)) %>%
+  tbl_summary()%>%
+  add_n
+
+##CREATE NEW VARIABLE "INC" TO BREAKDOWN WHO WE ARE INCLUDING AND WHO WE ARE EXCLUDING, WE ARE ONLY KEEPING OBSERVATIONS THAT HAVE EXPOSURE AND OUTCOME VARIABLES CAPTURED
+#ccreate new var "inc"
+ILEData_df<- ILEData_df %>%
+  mutate(inc=case_when (
+    (!is.na(cogCCAComposite2) &
+       !is.na(medanxdep.f) &
+       !is.na(currentAge_num)&
+       !is.na(raceth2.f)&
+       !is.na(Education.f)&
+       !is.na(income2.f)&
+       !is.na(subpreg.f)&
+       !is.na(racethneonate2.f)&
+       !is.na(gestage_num))&
+      !is.na(anx.f)&
+      !is.na(dep.f)
+    ~1,
+    TRUE~0))
+
+ILEData_df_2<- ILEData_df %>%
+  mutate(inc.f = factor(inc,   
+                        levels = 0:1,   #tell R that the levels are 0 and 1
+                        labels = c("Excluded", "Included"))) 
+#check new variable
+ILEData_df_2%>%
+  select(c(inc.f)) %>%
+  tbl_summary()%>%
+  add_n
+
+
+##CREATE NEW DATA FRAME THAT ONLY INCLUDES THOSE MEETING OUR INCLUSION CRITERIA
+df_incl <- ILEData_df_2 %>%
+  filter(inc.f == "Included")
+
+
+#check how many exposures in new dataset
+df_incl %>%
+  select(c(medanxdep.f)) %>%
+  tbl_summary()%>%
+  add_n
+#looks like 23/225 exactly 10%
+df_incl%>%
+  select(c(medanxdep.f)) %>%
+  tbl_summary() %>%
+  add_n 
+
+
+df_incl<- df_incl %>%
+  mutate(medanxdep_new = case_when(medanxdep.f== "No" ~ 0, 
+                                   medanxdep.f== "Yes" ~ 1,
+                                   TRUE ~ NA_real_)) %>% 
+  mutate(medanxdep_fac = factor(medanxdep_new, 
+                                levels = c(0:1),  
+                                labels = c("0", 
+                                           "1"
+                                )))
+#now check our outcome variable and recode it
+df_incl %>%
+  select(c(cogCCAComposite2)) %>%
+  tbl_summary()%>%
+  add_n
+# character to numeric
+df_incl <- df_incl %>%
+  mutate(cogCCAComposite2_num = as.numeric(cogCCAComposite2))  
+df_incl%>%
+  select(c(cogCCAComposite2_num)) %>%
+  tbl_summary() %>%
+  add_n 
+
+df_incl<- df_incl %>%
+  mutate(cogccacomp2_new=case_when (
+    cogCCAComposite2_num <85 ~1,
+    TRUE~0))
+#df_incl<- df_incl %>%
+#  mutate(cogccacomp.f = factor(cogccacomp2_new,   
+                               #levels = 0:1,   #tell R that the levels are 0 and 1
+                               #labels = c("No delay", "mild,moderate, or severe delay")))   
+#df_incl <- df_incl %>%
+#  mutate(cogccacomp2.f  = as.numeric(factor(cogccacomp.f, levels=c("No delay","mild,moderate, or severe delay"))))
+#cogccacomp.bi <- as.numeric(factor(df_incl$cogccacomp.f, levels=c(1,2), labels=c(0,1)))
+#drop observation 106
+df_incl_2<-df_incl[-106,]
+
+df_incl_2 %>%
+  select(c(cogCCAComposite)) %>%
+  tbl_summary()%>%
+  add_n
+#cross tabulation
+mytable<-table( df_incl_2$medanxdep.f,df_incl_2$cogccacomp2_new)
+print(mytable)
+
+#drop observation 106
+df_incl_2<-df_incl[-106,]
+
+#CREATE TABLE 1
+#CREATING tABLE 1 Maternal by cogccacomp
+df_incl_2%>%
+  select(c(currentAge_num, raceth2.f, Education.f,income2.f, racethneonate2.f, gestage_num,cogccacomp2_new)) %>%
+  tbl_summary(by = cogccacomp2_new, missing = "no" )%>%
+  add_n()%>% #adds N
+  bold_labels()%>% #makes variables bold
+  modify_header(label~"**Maternal/Neonate Variable**") #update column header
+#create table
+df_incl_2%>%
+  select(c(currentAge_num, raceth2.f, Education.f,income2.f, racethneonate2.f, gestage_num,cogccacomp2_new)) %>%
+  tbl_summary( )%>%
+  add_n()%>% #adds N
+  bold_labels()%>% #makes variables bold
+  modify_header(label~"**Maternal/Neonate Variable**") #update column header
+#create table by cogccaxomp
+my_table<- xtabs(~cogccacomp2_new + raceth2.f +currentAge_num+ Education.f +income2.f +racethneonate2.f + gestage_num,
+                 data=df_incl_2)
+#print table for no delay
+my_table
+##CONSTANT MODEL
+df_incl_uni<-glm(cogccacomp2_new~1, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni)
+
+logLik(df_incl_uni)
+
+
+##UNIVARIATE ANALYSIS WITH EXPOSURE MEDANXDEP AND OUTCOME COGCCACOMP
+df_incl_uni<-glm(cogccacomp2_new~1 + medanxdep.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni)
+
+logLik(df_incl_uni)
+confint(df_incl_uni)
+
+exp(cbind(OR= coef(df_incl_uni), confint(df_incl_uni)))
+
+df_incl_2 %>%
+  select(c(medanxdep.f)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE SUBSTANCE USE AND OUTCOME COGCCACOMP
+df_incl_uni2<-glm(cogccacomp2_new~1 + subpreg.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni2)
+
+logLik(df_incl_uni2)
+exp(cbind(OR= coef(df_incl_uni2), confint(df_incl_uni2)))
+
+df_incl_2 %>%
+  select(c(subpreg.f)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE GESTATIONAL AGE AND OUTCOME COGCCACOMP
+df_incl_uni3<-glm(cogccacomp2_new~1 + gestage_num, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni3)
+
+logLik(df_incl_uni3)
+exp(cbind(OR= coef(df_incl_uni3), confint(df_incl_uni3)))
+
+df_incl_2%>%
+  select(c(gestage_num)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE neonate raceth AND OUTCOME COGCCACOMP
+df_incl_uni4<-glm(cogccacomp2_new~1 + racethneonate2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni4)
+
+logLik(df_incl_uni4)
+exp(cbind(OR= coef(df_incl_uni4), confint(df_incl_uni4)))
+
+#new code for individual pval
+df_incl_uni4 <- glm(cogccacomp2_new ~ racethneonate2.f, data = df_incl_2, family = binomial(link = "logit"))
+summary(df_incl_uni4)
+
+logLik(df_incl_uni4)
+
+OR_table <- exp(cbind(OR = coef(df_incl_uni4), confint(df_incl_uni4)))
+OR_table
+
+tbl_summary(df_incl_2[c("cogccacomp2_new", "racethneonate2.f")]) %>%
+  add_n() %>%
+  bold_labels()
+
+# Extract overall p-value from model summary
+df_incl_null <- glm(cogccacomp2_new ~ 1, data = df_incl_2, family = binomial(link = "logit"))
+anova(df_incl_null, df_incl_uni4, test = "Chisq")
+
+
+df_incl_2 %>%
+  select(c(cogccacomp2_new)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE maternal age AND OUTCOME COGCCACOMP
+df_incl_uni5<-glm(cogccacomp2_new~1 + currentAge_num, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni5)
+
+logLik(df_incl_uni5)
+exp(cbind(OR= coef(df_incl_uni5), confint(df_incl_uni5)))
+
+df_incl_2 %>%
+  select(c(currentAge_num)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE dep AND OUTCOME COGCCACOMP
+df_incl_uni7<-glm(cogccacomp2_new~1 + dep.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni7)
+
+logLik(df_incl_uni7)
+exp(cbind(OR= coef(df_incl_uni7), confint(df_incl_uni7)))
+
+##UNIVARIATE ANALYSIS WITH COVARIATE anx.f AND OUTCOME COGCCACOMP
+df_incl_uni9<-glm(cogccacomp2_new~1 + anx.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni9)
+logLik(df_incl_uni9)
+exp(cbind(OR= coef(df_incl_uni9), confint(df_incl_uni9)))
+
+df_incl_2 %>%
+  select(c(anx.f)) %>%
+  tbl_summary()%>%
+  add_n
+##UNIVARIATE ANALYSIS WITH COVARIATE maternal raceth AND OUTCOME COGCCACOMP
+df_incl_uni10<-glm(cogccacomp2_new~1 + raceth2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni10)
+logLik(df_incl_uni10)
+exp(cbind(OR= coef(df_incl_uni10), confint(df_incl_uni10)))
+
+
+df_incl %>%
+  select(c(raceth.f)) %>%
+  tbl_summary()%>%
+  add_n
+#new for revisions
+df_incl_null <- glm(cogccacomp2_new ~ 1, data = df_incl_2, family = binomial(link = "logit"))
+anova(df_incl_null, df_incl_uni10, test = "Chisq")
+
+
+
+
+
+##UNIVARIATE ANALYSIS WITH COVARIATE income AND OUTCOME COGCCACOMP
+#change referent value to #$30k-39k
+df_incl_2$income2.f<-relevel(df_incl_2$income2.f, ref="Less than $19,999")
+#check new ref value
+levels(df_incl_2$income2.f)
+
+df_incl_uni11<-glm(cogccacomp2_new~1 + income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni11)
+logLik(df_incl_uni11)
+exp(cbind(OR= coef(df_incl_uni11), confint(df_incl_uni11)))
+#revision
+df_incl_null <- glm(cogccacomp2_new ~ 1, data = df_incl_2, family = binomial(link = "logit"))
+anova(df_incl_null, df_incl_uni11, test = "Chisq")
+
+
+
+
+
+
+##UNIVARIATE ANALYSIS WITH COVARIATE maternal education AND OUTCOME COGCCACOMP
+#change referent value to highschool/ged
+# Use forcats package and function fct_relevel() to change ref for ordered factor
+df_incl_2$Education.f <- fct_relevel(df_incl_2$Education.f, "High school graduate or GED")
+#check new ref value
+levels(df_incl_2$Education.f)
+
+df_incl_uni12<-glm(cogccacomp2_new~1 + Education.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_uni12)
+logLik(df_incl_uni12)
+exp(cbind(OR= coef(df_incl_uni12), confint(df_incl_uni12)))
+
+#revision
+# Extract overall p-value from model summary
+df_incl_null <- glm(cogccacomp2_new ~ 1, data = df_incl_2, family = binomial(link = "logit"))
+anova(df_incl_null, df_incl_uni12, test = "Chisq")
+##RUN MULTIVARIATE ANLYSES WITH ALL VARIABLES SIGNIFICANT AT THE  .25 LEVEL
+df_incl_multi1<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + currentAge_num + raceth2.f + Education.f+income2.f , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi1)
+logLik(df_incl_multi1)
+
+##RUN MULTIVARIATE ANLYSES NOW REMOVING All VARIABLES HIGHER THAN 0.05, LEAVING ONLY GESTAGE AND EDUC
+df_incl_multi2<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + Education.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi2)
+logLik(df_incl_multi2)
+
+##LIKELIHOOD RATIO TEST OF FULL AND REDUCED MODEL
+LRT<-anova(df_incl_multi1, df_incl_multi2, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+summary(df_incl_multi2)
+##NOW ADD BACK IN INSIGNIFICANT VARIABLES FROM EARLIER ONE AT A TIME
+#anx
+df_incl_multi3<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + Education.f + anx.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi3)
+logLik(df_incl_multi3)
+##SUBPREG
+df_incl_multi4<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + Education.f +subpreg.f , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi4)
+logLik(df_incl_multi4)
+##NEONATE RACE
+df_incl_multi5<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + Education.f+ racethneonate2.f , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi5)
+logLik(df_incl_multi5)
+##RACETH
+df_incl_multi8<-glm(cogccacomp2_new~1+medanxdep.f +gestage_num + Education.f+raceth2.f , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi8)
+logLik(df_incl_multi8)
+##Depression
+df_incl_multi6<-glm(cogccacomp2_new~1 +medanxdep.f+gestage_num + Education.f +dep.f , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi6)
+logLik(df_incl_multi6)
+
+##assess the scale of gest_num
+library("ggplot2")
+#scatterplot
+ggplot(df_incl_2,aes(x=gestage_num, y=(cogccacomp2_new)))+geom_point()+
+stat_smooth(method="glm",method.args=list(family="binomial"))+
+  labs(title="assessing linearity in logit",
+       x="gestationalage",
+       y="Logit of cogccacomp")
+
+#check coefficient change to assess for confounding
+#gestage
+df_incl_conf1<-glm(cogccacomp2_new~1+medanxdep.f+gestage_num , data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf1)
+logLik(df_incl_conf1)
+#educ
+df_incl_conf2<-glm(cogccacomp2_new~1+medanxdep.f+Education.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf2)
+logLik(df_incl_conf2)
+#dep
+df_incl_conf3<-glm(cogccacomp2_new~1+medanxdep.f+dep.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf3)
+logLik(df_incl_conf3)
+#anx
+df_incl_conf4<-glm(cogccacomp2_new~1+medanxdep.f+anx.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf4)
+logLik(df_incl_conf4)
+#subpreg
+df_incl_conf5<-glm(cogccacomp2_new~1+medanxdep.f+subpreg.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf5)
+logLik(df_incl_conf5)
+#neorace
+df_incl_conf6<-glm(cogccacomp2_new~1+medanxdep.f+racethneonate2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf6)
+logLik(df_incl_conf6)
+#matrace
+df_incl_multi2<-glm(cogccacomp2_new~1+medanxdep.f+raceth2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi2)
+logLik(df_incl_multi2)
+#age
+df_incl_conf7<-glm(cogccacomp2_new~1+medanxdep.f+currentAge_num, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf7)
+logLik(df_incl_conf7)
+#income
+df_incl_conf8<-glm(cogccacomp2_new~1+medanxdep.f+income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_conf8)
+logLik(df_incl_conf8)
+##based on these results the model is now this
+df_incl_multi4<-glm(cogccacomp2_new~1 +medanxdep.f+gestage_num + Education.f+dep.f+anx.f+raceth.f+racethneonate2.f +income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi4)
+logLik(df_incl_multi4)
+##LRT of new model and og
+LRT<-anova(df_incl_multi1, df_incl_multi4, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#interaction terms to assess emm
+#first gmedanx and gestage
+df_incl_2$gestmed<-interaction(df_incl_2$gestage_num,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm<-glm(cogccacomp2_new~1 +medanxdep.f+gestage_num, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm)
+logLik(df_incl_emm)
+#full model
+df_incl_emm1<-glm(cogccacomp2_new~1 +gestmed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm1)
+logLik(df_incl_emm1)
+##LRT of new model and og
+LRT<-anova(df_incl_emm, df_incl_emm1, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#medsub
+df_incl_2$medsub<-interaction(df_incl_2$subpreg.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm2<-glm(cogccacomp2_new~1 +medanxdep.f+subpreg.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm2)
+logLik(df_incl_emm2)
+#full model
+df_incl_emm3<-glm(cogccacomp2_new~1 +medsub, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm3)
+logLik(df_incl_emm3)
+##LRT of new model and og
+LRT<-anova(df_incl_emm2, df_incl_emm3, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#neomed
+df_incl_2$neomed<-interaction(df_incl_2$racethneonate2.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm5<-glm(cogccacomp2_new~1 +medanxdep.f+racethneonate2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm5)
+logLik(df_incl_emm5)
+#full model
+df_incl_emm6<-glm(cogccacomp2_new~1 +neomed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm6)
+logLik(df_incl_emm6)
+##LRT of new model and og
+LRT<-anova(df_incl_emm5, df_incl_emm6, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+#currentage
+df_incl_2$agemed<-interaction(df_incl_2$currentAge_num,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm7<-glm(cogccacomp2_new~1 +medanxdep.f+currentAge_num, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm7)
+logLik(df_incl_emm7)
+#full model
+df_incl_emm8<-glm(cogccacomp2_new~1 +agemed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm8)
+logLik(df_incl_emm8)
+##LRT of new model and og
+LRT<-anova(df_incl_emm7, df_incl_emm8, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#meddep
+df_incl_2$meddep<-interaction(df_incl_2$dep.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm9<-glm(cogccacomp2_new~1 +medanxdep.f+dep.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm9)
+logLik(df_incl_emm9)
+#full model
+df_incl_emm10<-glm(cogccacomp2_new~1 +meddep, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm10)
+logLik(df_incl_emm10)
+##LRT of new model and og
+LRT<-anova(df_incl_emm9, df_incl_emm10, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#medanx
+df_incl_2$medanx<-interaction(df_incl_2$anx.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm11<-glm(cogccacomp2_new~1 +medanxdep.f+anx.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm11)
+logLik(df_incl_emm11)
+#full model
+df_incl_emm12<-glm(cogccacomp2_new~1 +medanx, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm12)
+logLik(df_incl_emm12)
+##LRT of new model and og
+LRT<-anova(df_incl_emm11, df_incl_emm12, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#matmed
+df_incl_2$matmed<-interaction(df_incl_2$raceth2.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm13<-glm(cogccacomp2_new~1 +medanxdep.f+raceth2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm13)
+logLik(df_incl_emm13)
+#full model
+df_incl_emm14<-glm(cogccacomp2_new~1 +matmed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm14)
+logLik(df_incl_emm14)
+
+#incomemed
+df_incl_2$incomemed<-interaction(df_incl_2$gestage_num,df_incl_2$income2.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm15<-glm(cogccacomp2_new~1 +medanxdep.f+income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm15)
+logLik(df_incl_emm15)
+#full model
+df_incl_emm16<-glm(cogccacomp2_new~1 +incomemed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm16)
+logLik(df_incl_emm16)
+##LRT of new model and og
+LRT<-anova(df_incl_emm15, df_incl_emm16, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#edumed
+df_incl_2$edumed<-interaction(df_incl_2$Education.f,df_incl_2$medanxdep.f)
+head(df_incl_2)
+
+#reduced
+df_incl_emm17<-glm(cogccacomp2_new~1 +medanxdep.f+Education.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm17)
+logLik(df_incl_emm17)
+#full model
+df_incl_emm18<-glm(cogccacomp2_new~1 +edumed, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_emm18)
+logLik(df_incl_emm18)
+##LRT of new model and og
+LRT<-anova(df_incl_emm17, df_incl_emm18, test = "Chisq")
+p_value <- LRT[2, "Pr(>Chi)"]
+
+#no interactions 
+#full model
+df_incl_multi4<-glm(cogccacomp2_new~1 +medanxdep.f+gestage_num + Education.f+dep.f+anx.f+raceth.f+racethneonate2.f +income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi4)
+logLik(df_incl_multi4)
+exp(cbind(OR= coef(df_incl_multi4), confint(df_incl_multi4)))
+
+#evidence of overfitting try vif
+install.packages("car")
+vif(df_incl_multi4)
+
+#full model
+df_incl_multi5<-glm(cogccacomp2_new~1 +medanxdep.f+gestage_num + Education.f+dep.f+anx.f+racethneonate2.f +income2.f, data =df_incl_2, family = binomial(link= "logit"))
+summary(df_incl_multi5)
+logLik(df_incl_multi5)
+exp(cbind(OR= coef(df_incl_multi5), confint(df_incl_multi5)))
+vif(df_incl_multi5)
+
