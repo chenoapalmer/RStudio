@@ -1,0 +1,869 @@
+#oid
+PSQI%>%
+  select(c(oid))%>%
+  tbl_summary()%>%
+  add_n()
+
+#name
+PSQI%>%
+  select(c(name))%>%
+  tbl_summary()%>%
+  add_n()
+#change name to specify mother's name
+PSQI <- rename(PSQI, maternal_questionnaire_Name= "name")
+
+#OPRNID
+PSQI%>%
+  select(c(OPRNID))%>%
+  tbl_summary()%>%
+  add_n()
+#change name to specify mother's 
+PSQI <- rename(PSQI, maternalOPRNID= "OPRNID")
+
+#preguniqueid
+PSQI%>%
+  select(c(pregUniqueID))%>%
+  tbl_summary()%>%
+  add_n()
+
+#pregNO
+PSQI%>%
+  select(c(pregNo))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI <- PSQI%>%
+  mutate(pregNo_num = as.numeric(pregNo)) 
+#check variable
+PSQI%>%
+  select(c(pregNo_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#trimester period
+PSQI%>%
+  select(c(trimesterPeriod))%>%
+  tbl_summary()%>%
+  add_n() 
+#make factor
+PSQI <-PSQI %>%
+  mutate(trimesterPeriod_new = case_when(trimesterPeriod== "PP" ~ 0, 
+                                         trimesterPeriod== "First" ~ 1, 
+                                         trimesterPeriod== "Second" ~ 2, 
+                                         trimesterPeriod== "Third" ~ 3, 
+                                         TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI %>%
+  mutate(trimesterPeriod.f = factor(trimesterPeriod_new,   
+                                    levels = 0:3, #specify levels
+                                    labels = c("PP","First", "Second", "Third"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(trimesterPeriod.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#surveydate
+PSQI%>%
+  select(c(surveyDate))%>%
+  tbl_summary()%>%
+  add_n()
+
+#status
+PSQI%>%
+  select(c(status))%>%
+  tbl_summary()%>%
+  add_n()
+
+#getUpTime  UNSURE ABOUT THIS
+PSQI%>%
+  select(c(getUpTime))%>%
+  tbl_summary()%>%
+  add_n()
+
+#cvtgetuptime unsure what is or how to handle date
+PSQI%>%
+  select(c(cvtgetUpTime))%>%
+  tbl_summary()%>%
+  add_n()
+
+#getuptimeonly
+PSQI%>%
+  select(c(GetUPTimeOnly))%>%
+  tbl_summary()%>%
+  add_n()
+
+#minstofallasleep
+PSQI%>%
+  select(c(minsToFallAsleep))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI <-PSQI%>%
+  mutate(minsToFallAsleep_num = as.numeric(minsToFallAsleep)) 
+#check variable
+PSQI%>%
+  select(c(minsToFallAsleep_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreminstofallasleep
+PSQI%>%
+  select(c(scoreminsToFallAsleep))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI <-PSQI%>%
+  mutate(scoreminsToFallAsleep_num = as.numeric(scoreminsToFallAsleep)) 
+#check variable
+PSQI%>%
+  select(c(scoreminsToFallAsleep_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#hoursOfSleep
+PSQI%>%
+  select(c(hoursOfSleep))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI <-PSQI%>%
+  mutate(hoursOfSleep_num = as.numeric(hoursOfSleep)) 
+#check variable
+PSQI%>%
+  select(c(hoursOfSleep_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#psqiDurat
+PSQI%>%
+  select(c(psqiDurat))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI <-PSQI%>%
+  mutate(psqiDurat_num = as.numeric(psqiDurat)) 
+#check variable
+PSQI%>%
+  select(c(psqiDurat_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#cvtbedTime unsure time
+PSQI%>%
+  select(c(cvtbedTime))%>%
+  tbl_summary()%>%
+  add_n()
+
+#bedTimeOnly
+PSQI%>%
+  select(c(BedTimeOnly))%>%
+  tbl_summary()%>%
+  add_n()
+# convert to time objects
+PSQI <- PSQI %>% mutate(BedTimeOnly_obj = strptime(BedTimeOnly, format = "%I:%M:%p"))
+# extract time portion as string
+PSQI <- PSQI %>% mutate(BedTimeOnly_new = format(BedTimeOnly_obj, format = "%H:%M:%S"))
+#check new var
+print(PSQI$BedTimeOnly_new) #it now has YYYY-MM-DD HH:MM:SS??
+
+#otherReasonDesc
+PSQI%>%
+  select(c(otherReasonDesc))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Feel too hot
+PSQI%>%
+  select(c(FeelTooHot))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(FeelTooHot_new = case_when(FeelTooHot== "Not during the past month" ~ 0, 
+                                    FeelTooHot== "Less than once a week" ~ 1, 
+                                    FeelTooHot== "Once or twice a week" ~ 2,
+                                    FeelTooHot== "Three or more times a week" ~ 3, 
+                                     TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(FeelTooHot.f = factor(FeelTooHot_new,   
+                                levels = 0:3, #specify levels
+                                labels = c("Not during the past month","Less than once a week", 
+                                           "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(FeelTooHot.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreFeelTooHot
+PSQI%>%
+  select(c(scoreFeelTooHot))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreFeelTooHot_num = as.numeric(scoreFeelTooHot)) 
+#check variable
+PSQI%>%
+  select(c(scoreFeelTooHot_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Have Pain
+PSQI%>%
+  select(c(HavePain))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(HavePain_new = case_when(HavePain== "Not during the past month" ~ 0, 
+                                  HavePain== "Less than once a week" ~ 1, 
+                                  HavePain== "Once or twice a week" ~ 2,
+                                  HavePain== "Three or more times a week" ~ 3, 
+                                    TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(HavePain.f = factor(HavePain_new,   
+                               levels = 0:3, #specify levels
+                               labels = c("Not during the past month","Less than once a week", 
+                                          "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(HavePain.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreHavePain
+PSQI%>%
+  select(c(scoreHavePain))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreHavePain_num = as.numeric(scoreHavePain)) 
+#check variable
+PSQI%>%
+  select(c(scoreHavePain_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Took Medicine
+PSQI%>%
+  select(c(TookMedicine))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(TookMedicine_new = case_when(TookMedicine== "Not during the past month" ~ 0, 
+                                      TookMedicine== "Less than once a week" ~ 1, 
+                                      TookMedicine== "Once or twice a week" ~ 2,
+                                      TookMedicine== "Three or more times a week" ~ 3, 
+                                  TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(TookMedicine.f = factor(TookMedicine_new,   
+                             levels = 0:3, #specify levels
+                             labels = c("Not during the past month","Less than once a week", 
+                                        "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(TookMedicine.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#psqiTMEDS
+PSQI%>%
+  select(c(psqiMEDS))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(psqiMEDS_num = as.numeric(psqiMEDS)) 
+#check variable
+PSQI%>%
+  select(c(psqiMEDS_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Enthusiasm
+PSQI%>%
+  select(c(Enthusiasm))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(Enthusiasm_new = case_when(Enthusiasm== "No problem at all" ~ 0, 
+                                    Enthusiasm== "Only a very slight problem" ~ 1, 
+                                    Enthusiasm== "Somewhat of a problem	" ~ 2,
+                                    Enthusiasm== "A very big problem" ~ 3, 
+                                      TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(Enthusiasm.f = factor(Enthusiasm_new,   
+                                 levels = 0:3, #specify levels
+                                 labels = c("No problem at all","Only a very slight problem", 
+                                            "Somewhat of a problem", "A very big problem"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(Enthusiasm.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreEnthusiasm
+PSQI%>%
+  select(c(scoreEnthusiasm))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreEnthusiasm_num = as.numeric(scoreEnthusiasm)) 
+#check variable
+PSQI%>%
+  select(c(scoreEnthusiasm_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#CannotSleepIn30Mins
+PSQI%>%
+  select(c(CannotSleepIn30Mins))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(CannotSleepIn30Mins_new = case_when(CannotSleepIn30Mins== "Not during the past month" ~ 0, 
+                                             CannotSleepIn30Mins== "Less than once a week" ~ 1, 
+                                             CannotSleepIn30Mins== "Once or twice a week" ~ 2,
+                                             CannotSleepIn30Mins== "Three or more times a week" ~ 3, 
+                                      TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(CannotSleepIn30Mins.f = factor(CannotSleepIn30Mins_new,   
+                                 levels = 0:3, #specify levels
+                                 labels = c("Not during the past month","Less than once a week", 
+                                            "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(CannotSleepIn30Mins.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreCannotSleepIn30Mins
+PSQI%>%
+  select(c(scoreCannotSleepIn30Mins))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreCannotSleepIn30Mins_num = as.numeric(scoreCannotSleepIn30Mins)) 
+#check variable
+PSQI%>%
+  select(c(scoreCannotSleepIn30Mins_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Other
+PSQI%>%
+  select(c(Other))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(Other_new = case_when(Other== "Not during the past month" ~ 0, 
+                               Other== "Less than once a week" ~ 1, 
+                               Other== "Once or twice a week" ~ 2,
+                               Other== "Three or more times a week" ~ 3, 
+                                             TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(Other.f = factor(Other_new,   
+                                        levels = 0:3, #specify levels
+                                        labels = c("Not during the past month","Less than once a week", 
+                                                   "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(Other.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreOther
+PSQI%>%
+  select(c(scoreOther))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreOther_num = as.numeric(scoreOther)) 
+#check variable
+PSQI%>%
+  select(c(scoreOther_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#FeelTooCold
+PSQI%>%
+  select(c(FeelTooCold))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(FeelTooCold_new = case_when(FeelTooCold== "Not during the past month" ~ 0, 
+                                     FeelTooCold== "Less than once a week" ~ 1, 
+                                     FeelTooCold== "Once or twice a week" ~ 2,
+                                     FeelTooCold== "Three or more times a week" ~ 3, 
+                               TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(FeelTooCold.f = factor(FeelTooCold_new,   
+                          levels = 0:3, #specify levels
+                          labels = c("Not during the past month","Less than once a week", 
+                                     "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(FeelTooCold.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreFeelTooCold
+PSQI%>%
+  select(c(scoreFeelTooCold))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreFeelTooCold_num = as.numeric(scoreFeelTooCold)) 
+#check variable
+PSQI%>%
+  select(c(scoreFeelTooCold_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#CannotBreatheComfort
+PSQI%>%
+  select(c(CannotBreatheComfort))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(CannotBreatheComfort_new = case_when(CannotBreatheComfort== "Not during the past month" ~ 0, 
+                                              CannotBreatheComfort== "Less than once a week" ~ 1, 
+                                              CannotBreatheComfort== "Once or twice a week" ~ 2,
+                                              CannotBreatheComfort== "Three or more times a week" ~ 3, 
+                                     TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(CannotBreatheComfort.f = factor(CannotBreatheComfort_new,   
+                                levels = 0:3, #specify levels
+                                labels = c("Not during the past month","Less than once a week", 
+                                           "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(CannotBreatheComfort.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreCannotBreatheComfort
+PSQI%>%
+  select(c(scoreCannotBreatheComfort))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreCannotBreatheComfort_num = as.numeric(scoreCannotBreatheComfort)) 
+#check variable
+PSQI%>%
+  select(c(scoreCannotBreatheComfort_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Staying Awake
+PSQI%>%
+  select(c(StayingAwake))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(StayingAwake_new = case_when(StayingAwake== "Not during the past month" ~ 0, 
+                                      StayingAwake== "Less than once a week" ~ 1, 
+                                      StayingAwake== "Once or twice a week" ~ 2,
+                                      StayingAwake== "Three or more times a week" ~ 3, 
+                                              TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(StayingAwake.f = factor(StayingAwake_new,   
+                                         levels = 0:3, #specify levels
+                                         labels = c("Not during the past month","Less than once a week", 
+                                                    "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(StayingAwake.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreStayingAwake
+PSQI%>%
+  select(c(scoreStayingAwake))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreStayingAwake_num = as.numeric(scoreStayingAwake)) 
+#check variable
+PSQI%>%
+  select(c(scoreStayingAwake_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#CoughSnoreLoudly
+PSQI%>%
+  select(c(CoughSnoreLoudly))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(CoughSnoreLoudly_new = case_when(CoughSnoreLoudly== "Not during the past month" ~ 0, 
+                                          CoughSnoreLoudly== "Less than once a week" ~ 1, 
+                                          CoughSnoreLoudly== "Once or twice a week" ~ 2,
+                                          CoughSnoreLoudly== "Three or more times a week" ~ 3, 
+                                      TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(CoughSnoreLoudly.f = factor(CoughSnoreLoudly_new,   
+                                 levels = 0:3, #specify levels
+                                 labels = c("Not during the past month","Less than once a week", 
+                                            "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(CoughSnoreLoudly.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreCoughSnoreLoudly
+PSQI%>%
+  select(c(scoreCoughSnoreLoudly))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreCoughSnoreLoudly_num = as.numeric(scoreCoughSnoreLoudly)) 
+#check variable
+PSQI%>%
+  select(c(scoreCoughSnoreLoudly_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#HadBadDreams
+PSQI%>%
+  select(c(HadBadDreams))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(HadBadDreams_new = case_when(HadBadDreams== "Not during the past month" ~ 0, 
+                                      HadBadDreams== "Less than once a week" ~ 1, 
+                                      HadBadDreams== "Once or twice a week" ~ 2,
+                                      HadBadDreams== "Three or more times a week" ~ 3, 
+                                          TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(HadBadDreams.f = factor(HadBadDreams_new,   
+                                     levels = 0:3, #specify levels
+                                     labels = c("Not during the past month","Less than once a week", 
+                                                "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(HadBadDreams.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreHadBadDreams
+PSQI%>%
+  select(c(scoreHadBadDreams))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreHadBadDreams_num = as.numeric(scoreHadBadDreams)) 
+#check variable
+PSQI%>%
+  select(c(scoreHadBadDreams_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#GetUpToUseBath
+PSQI%>%
+  select(c(GetUpToUseBath))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(GetUpToUseBath_new = case_when(GetUpToUseBath== "Not during the past month" ~ 0, 
+                                        GetUpToUseBath== "Less than once a week" ~ 1, 
+                                        GetUpToUseBath== "Once or twice a week" ~ 2,
+                                        GetUpToUseBath== "Three or more times a week" ~ 3, 
+                                      TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(GetUpToUseBath.f = factor(GetUpToUseBath_new,   
+                                 levels = 0:3, #specify levels
+                                 labels = c("Not during the past month","Less than once a week", 
+                                            "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(GetUpToUseBath.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreGetUpToUseBath
+PSQI%>%
+  select(c(scoreGetUpToUseBath))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreGetUpToUseBath_num = as.numeric(scoreGetUpToUseBath)) 
+#check variable
+PSQI%>%
+  select(c(scoreGetUpToUseBath_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#Sleep quality
+PSQI%>%
+  select(c(SleepQuality))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(SleepQuality_new = case_when(SleepQuality== "Very bad" ~ 0, 
+                                      SleepQuality== "Fairly bad" ~ 1, 
+                                      SleepQuality== "Fairly good" ~ 2,
+                                      SleepQuality== "Very good" ~ 3, 
+                                        TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(SleepQuality.f = factor(SleepQuality_new,   
+                                   levels = 0:3, #specify levels
+                                   labels = c("Very bad","Fairly bad", 
+                                              "Fairly good", "Very good"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(SleepQuality.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#pssqiPQUAL
+PSQI%>%
+  select(c(psqiPQUAL))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(psqiPQUAL_num = as.numeric(psqiPQUAL)) 
+#check variable
+PSQI%>%
+  select(c(psqiPQUAL_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#WakeUpAtNight
+PSQI%>%
+  select(c(WakeUpAtNight))%>%
+  tbl_summary()%>%
+  add_n()
+#make factor
+PSQI <- PSQI %>%
+  mutate(WakeUpAtNight_new = case_when(WakeUpAtNight== "Not during the past month" ~ 0, 
+                                       WakeUpAtNight== "Less than once a week" ~ 1, 
+                                       WakeUpAtNight== "Once or twice a week" ~ 2,
+                                       WakeUpAtNight== "Three or more times a week" ~ 3, 
+                                      TRUE ~ NA_real_))  #this makes everything else missing
+PSQI <- PSQI%>%
+  mutate(WakeUpAtNight.f = factor(WakeUpAtNight_new,   
+                                 levels = 0:3, #specify levels
+                                 labels = c("Not during the past month","Less than once a week", 
+                                            "Once or twice a week", "Three or more times a week"))) #label levels 
+#check new variable
+PSQI%>%
+  select(c(WakeUpAtNight.f))%>%
+  tbl_summary()%>%
+  add_n()
+
+#scoreWakeUpAtNightHadBadDreams
+PSQI%>%
+  select(c(scoreWakeUpAtNight))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(scoreWakeUpAtNight_num = as.numeric(scoreWakeUpAtNight)) 
+#check variable
+PSQI%>%
+  select(c(scoreWakeUpAtNight_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#modScoreOther
+PSQI%>%
+  select(c(modScoreOther))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(modScoreOther_num = as.numeric(modScoreOther)) 
+#check variable
+PSQI%>%
+  select(c(modScoreOther_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#sumQ5
+PSQI%>%
+  select(c(sumQ5))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(sumQ5_num = as.numeric(sumQ5)) 
+#check variable
+PSQI%>%
+  select(c(sumQ5_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#psqiDISTB
+PSQI%>%
+  select(c(psqiDISTB))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(psqiDISTB_num = as.numeric(psqiDISTB)) 
+#check variable
+PSQI%>%
+  select(c(psqiDISTB_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#psqiLaten
+PSQI%>%
+  select(c(psqiLaten))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(psqiLaten_num = as.numeric(psqiLaten)) 
+#check variable
+PSQI%>%
+  select(c(psqiLaten_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#funcTimeDiff
+PSQI%>%
+  select(c(funcTimeDiff))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(funcTimeDiff_num = as.numeric(funcTimeDiff)) 
+#check variable
+PSQI%>%
+  select(c(funcTimeDiff_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#psqiHSE
+PSQI%>%
+  select(c(psqiHSE))%>%
+  tbl_summary()%>%
+  add_n()
+#make numeric
+PSQI<- PSQI%>%
+  mutate(psqiHSE_num = as.numeric(psqiHSE)) 
+#check variable
+PSQI%>%
+  select(c(psqiHSE_num))%>%
+  tbl_summary()%>%
+  add_n()
+
+#dateCreated 12/30/1899 days since fix
+PSQI%>%
+  select(c(dateCreated))%>%
+  tbl_summary()%>%
+  add_n()
+
+#datemodified fix
+PSQI%>%
+  select(c(dateModified))%>%
+  tbl_summary()%>%
+  add_n()
+
+#sourcedeletedate
+PSQI%>%
+  select(c(SourceDeleteDate))%>%
+  tbl_summary()%>%
+  add_n()
+
+# warehousedate fix
+PSQI%>%
+  select(c(WarehouseDate))%>%
+  tbl_summary()%>%
+  add_n()
+#variable labels #what is this
+var_label(PSQI$WarehouseDate)<-"Warehouse Data"
+var_label(PSQI$dateModified)<-"Date modified"
+var_label(PSQI$dateCreated)<-"Date created"
+var_label(PSQI$psqiHSE_num)<-"PSQI HSE" # what is this
+var_label(PSQI$funcTimeDiff_num)<-"PSQI func Time Difference" #what is this
+var_label(PSQI$psqiLaten_num)<-"PSQI scores Laten"
+var_label(PSQI$psqiDISTB_num)<-"Distribution of PSQI scores"
+var_label(PSQI$sumQ5_num)<-"Sum of Question 5 responses"
+var_label(PSQI$modScoreOther_num)<-"Mod score other" #not sure what this is
+var_label(PSQI$scoreWakeUpAtNight_num)<-"Trouble sleeping because waking up at night score"
+var_label(PSQI$WakeUpAtNight.f)<-"Trouble sleeping because waking up at night"
+var_label(PSQI$psqiPQUAL_num)<-"Overall sleep quality during past month score"
+var_label(PSQI$SleepQuality.f)<-"Overall sleep quality during past month"
+var_label(PSQI$scoreGetUpToUseBath_num)<-"Trouble sleeping because have to get up to use the bathroom score"
+var_label(PSQI$GetUpToUseBath.f)<-"Trouble sleeping because have to get up to use the bathroom"
+var_label(PSQI$scoreHadBadDreams_num)<-"Trouble sleeping because of bad dreams score"
+var_label(PSQI$HadBadDreams.f)<-"Trouble sleeping because of bad dreams"
+var_label(PSQI$scoreCoughSnoreLoudly_num)<-"Trouble sleeping because loud coughing or snoring score"
+var_label(PSQI$CoughSnoreLoudly.f)<-"Trouble sleeping because loud coughing or snoring"
+var_label(PSQI$scoreStayingAwake_num)<-"Trouble staying awake while driving, eating meals, or engaging in social activity score"
+var_label(PSQI$StayingAwake.f)<-"Trouble staying awake while driving, eating meals, or engaging in social activity"
+var_label(PSQI$CannotBreatheComfort.f)<-"Trouble sleeping because cannot breathe comfortably"
+var_label(PSQI$scoreCannotBreatheComfort_num)<-"Trouble sleeping because cannot breathe comfortably score"
+var_label(PSQI$scoreFeelTooCold_num)<-"Trouble sleeping because too cold score"
+var_label(PSQI$FeelTooCold.f)<-"Trouble sleeping because too cold"
+var_label(PSQI$scoreOther_num)<-"Trouble sleeping for other reasons score"
+var_label(PSQI$Other.f)<-"Trouble sleeping for other reasons"
+var_label(PSQI$scoreCannotSleepIn30Mins_num)<-"Trouble sleeping ebcause could not get to sleep within 30 minutes score"
+var_label(PSQI$CannotSleepIn30Mins.f)<-"Trouble sleeping ebcause could not get to sleep within 30 minutes"
+var_label(PSQI$scoreEnthusiasm_num)<-"How much of a problem hasit been keeping up enough 
+enthusiasm to get things done in last month score?"
+var_label(PSQI$Enthusiasm.f)<-"How much of a problem hasit been keeping up enough 
+enthusiasm to get things done in last month?"
+var_label(PSQI$TookMedicine.f)<-"Taken medicine to help sleep in past month"
+var_label(PSQI$psqiMEDS)<-"Taken medicine to help sleep in past month score"
+var_label(PSQI$scoreHavePain_num)<-"Trouble sleeping because pain score"
+var_label(PSQI$HavePain.f)<-"Trouble sleeping because pain"
+var_label(PSQI$scoreFeelTooHot)<-"Trouble sleeping because too hot score"
+var_label(PSQI$FeelTooHot.f)<-"Trouble sleeping because too hot"
+var_label(PSQI$otherReasonDesc)<-"Other reasons for waking up at night "
+var_label(PSQI$BedTimeOnly_new)<-"Average bedtime"
+var_label(PSQI$psqiDurat_num)<-"PSQI "# what is this
+var_label(PSQI$hoursOfSleep_num)<-"Average hours of sleep per night"
+var_label(PSQI$scoreminsToFallAsleep_num)<-"Average minutes it takes to fall asleep score"
+var_label(PSQI$minsToFallAsleep_num)<-"Average minutes it takes to fall asleep"
+var_label(PSQI$GetUPTimeOnly)<-"Time usually gotten up in the morning"
+var_label(PSQI$cvtgetUpTime)<-"CVT get up time" #remove
+var_label(PSQI$getUpTime)<-"Get up time"#remove
+var_label(PSQI$pregUniqueID)<-"Unique pregnancy ID"
+var_label(PSQI$surveyDate)<-"Date survey occurred"
+var_label(PSQI$trimesterPeriod.f)<-"Trimester period during assessment"
+var_label(PSQI$pregNo_num)<-"Pregnancy Number"
+var_label(PSQI$maternalOPRNID)<-"Maternal OPRNID"
+var_label(PSQI$maternal_questionnaire_Name)<-"Name of maternal questionnaire"
+
+##SUBSET CLEAN DATA
+#subsetofdata
+PSQI_cleaned<-PSQI %>%
+  select(maternal_questionnaire_Name,maternalOPRNID,pregNo_num,trimesterPeriod.f,
+         surveyDate,pregUniqueID, getUpTime,cvtgetUpTime,GetUPTimeOnly,minsToFallAsleep_num,
+         scoreminsToFallAsleep_num,hoursOfSleep_num, psqiDurat_num, BedTimeOnly_new,
+         otherReasonDesc,FeelTooHot.f,scoreFeelTooHot_num, HavePain.f, scoreHavePain_num,
+         TookMedicine.f,psqiMEDS_num, Enthusiasm.f,scoreEnthusiasm_num,CannotSleepIn30Mins.f,
+         scoreCannotSleepIn30Mins_num,Other.f,scoreOther_num,FeelTooCold.f, scoreFeelTooCold_num,
+         CannotBreatheComfort.f,scoreCannotBreatheComfort_num,StayingAwake.f,scoreStayingAwake_num,
+         HadBadDreams.f,scoreHadBadDreams_num,scoreGetUpToUseBath_num,GetUpToUseBath.f,SleepQuality.f,
+         psqiPQUAL_num,WakeUpAtNight.f,scoreWakeUpAtNight_num,modScoreOther_num, sumQ5_num, psqiDISTB_num,
+         funcTimeDiff_num,WarehouseDate,dateModified,dateCreated
+         )
